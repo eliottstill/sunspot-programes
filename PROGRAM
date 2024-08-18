@@ -1,0 +1,197 @@
+PROGRAM FOR POLT
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the CSV file with the correct delimiter
+file_path = '/content/SN_y_tot_V2.0.csv'
+data = pd.read_csv(file_path, delimiter=';')
+
+# Plot an area chart between 'year' and 'sunspot' columns
+plt.figure(figsize=(20, 6))
+plt.fill_between(data['year'], data['sunspot'], color='skyblue', alpha=0.4)
+plt.plot(data['year'], data['sunspot'], color='Slateblue', alpha=0.6, linewidth=2)
+plt.xlabel('Year')
+plt.ylabel('Sunspot')
+plt.title('Area Chart between Year and Sunspot')
+plt.grid(True)
+plt.show()
+---------------------
+PROGRAM FOR PREDICTION
+PART I
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+# Load the dataset
+file_path = '/content/SN_y_tot_V2.0.csv'  # Update this path
+data = pd.read_csv(file_path, sep=';')
+
+# Drop any unnecessary columns
+if 'Unnamed: 5' in data.columns:
+    data = data.drop(columns=['Unnamed: 5'])
+
+# Convert the data to a time series
+data['year'] = pd.to_datetime(data['year'], format='%Y')
+data.set_index('year', inplace=True)
+
+# Create more lagged features
+for i in range(1, 6):  # Adding more lags up to 5
+    data[f'lag{i}'] = data['sunspot'].shift(i)
+
+# Drop any rows with NaN values that resulted from shifting
+data = data.dropna()
+
+# Split the data into features (X) and target (y)
+X = data[[f'lag{i}' for i in range(1, 6)]]  # Using lags 1 through 5
+y = data['sunspot']
+
+# Generate polynomial features (degree 2 for simplicity)
+poly = PolynomialFeatures(degree=2, include_bias=False)
+X_poly = poly.fit_transform(X)
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_poly, y, test_size=0.2, shuffle=False)
+
+# Train the Polynomial Regression model
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Make predictions
+predictions = model.predict(X_test)
+
+# Ensure no negative predictions
+predictions = np.maximum(predictions, 0)
+
+# Predict future data (for 20 years)
+future_steps = 10
+last_row = X_poly[-1, :].reshape(1, -1)
+future_predictions = []
+
+for i in range(future_steps):
+    pred = model.predict(last_row)[0]
+    pred = max(pred, 0)  # Ensure no negative future predictions
+    future_predictions.append(pred)
+    new_row = np.roll(last_row[0, :5], -1)  # Shift the lags
+    new_row[-1] = pred
+    last_row = poly.transform(new_row.reshape(1, -1))
+
+# Plot the actual vs predicted values and future predictions
+plt.figure(figsize=(12, 6))
+plt.plot(data.index, data['sunspot'], label='Actual Sunspot Count', color='blue')
+plt.plot(data.index[-len(y_test):], predictions, label='Predicted Sunspot Count', color='green', linestyle='--')
+plt.plot(pd.date_range(data.index[-1], periods=future_steps, freq='Y'), future_predictions,
+         label='Future Predictions', color='red', linestyle='--')
+
+# Set y-axis range in multiples of 100
+y_min = 0
+y_max = int(max(data['sunspot'].max(), max(future_predictions)) + 100)
+plt.yticks(np.arange(y_min, y_max + 100, 100))
+
+plt.title('Sunspot Count Prediction (Polynomial Regression)')
+plt.xlabel('Year')
+plt.ylabel('Sunspot Count')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Calculate and print the Mean Squared Error
+mse = mean_squared_error(y_test, predictions)
+#print(f'Mean Squared Error: {mse}')
+
+PART II
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+# Load the dataset
+file_path = '/content/SN_y_tot_V2.0.csv'
+data = pd.read_csv(file_path, sep=';')
+
+# Drop any unnecessary columns
+if 'Unnamed: 5' in data.columns:
+    data = data.drop(columns=['Unnamed: 5'])
+
+# Convert the data to a time series
+data['year'] = pd.to_datetime(data['year'], format='%Y')
+data.set_index('year', inplace=True)
+
+# Create more lagged features
+for i in range(1, 6):  # Adding more lags up to 5
+    data[f'lag{i}'] = data['sunspot'].shift(i)
+
+# Drop any rows with NaN values that resulted from shifting
+data = data.dropna()
+
+# Split the data into features (X) and target (y)
+X = data[[f'lag{i}' for i in range(1, 6)]]
+y = data['sunspot']
+
+# Generate polynomial features (degree 2 for simplicity)
+poly = PolynomialFeatures(degree=2, include_bias=False)
+X_poly = poly.fit_transform(X)
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_poly, y, test_size=0.2, shuffle=False)
+
+# Train the Polynomial Regression model
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Make predictions
+predictions = model.predict(X_test)
+
+# Ensure no negative predictions
+predictions = np.maximum(predictions, 0)
+
+# Predict future data (for 20 years)
+future_steps = 90         # enter the years
+
+last_row = X_poly[-1, :].reshape(1, -1)
+future_predictions = []
+
+for i in range(future_steps):
+    pred = model.predict(last_row)[0]
+    pred = max(pred, 0)  # Ensure no negative future predictions
+    future_predictions.append(pred)
+    new_row = np.roll(last_row[0, :5], -1)  # Shift the lags
+    new_row[-1] = pred
+    last_row = poly.transform(new_row.reshape(1, -1))
+
+# Plot the area chart for actual, predicted, and future predictions
+plt.figure(figsize=(12, 6))
+
+# Area chart for actual sunspot counts
+plt.fill_between(data.index, data['sunspot'], color='blue', alpha=0.3, label='Actual Sunspot Count')
+
+# Area chart for predicted sunspot counts
+plt.fill_between(data.index[-len(y_test):], predictions, color='green', alpha=0.3, label='Predicted Sunspot Count')
+
+# Area chart for future predictions
+plt.fill_between(pd.date_range(data.index[-1], periods=future_steps, freq='Y'), future_predictions,
+                 color='red', alpha=0.3, label='Future Predictions')
+
+# Set y-axis range in multiples of 100
+y_min = 0
+y_max = int(max(data['sunspot'].max(), max(future_predictions)) + 100)
+plt.yticks(np.arange(y_min, y_max + 100, 100))
+
+plt.title('Sunspot Count Prediction (Polynomial Regression)')
+plt.xlabel('Year')
+plt.ylabel('Sunspot Count')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Calculate and print the Mean Squared Error
+mse = mean_squared_error(y_test, predictions)
+print(f'Mean Squared Error: {mse}')
