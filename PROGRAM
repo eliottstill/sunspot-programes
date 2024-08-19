@@ -195,3 +195,51 @@ plt.show()
 # Calculate and print the Mean Squared Error
 mse = mean_squared_error(y_test, predictions)
 print(f'Mean Squared Error: {mse}')
+------------------------------------------------------
+PART III
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.signal import argrelextrema
+import numpy as np
+
+# Load the CSV file with the correct delimiter
+file_path = '/content/SN_y_tot_V2.0.csv'
+data = pd.read_csv(file_path, delimiter=';')
+
+# Identify local maxima using scipy's argrelextrema function
+# It returns the indices of the local maxima
+local_max_indices = argrelextrema(data['sunspot'].values, comparator=np.greater)[0]
+
+# Extract the local maxima points
+local_maxima = data.iloc[local_max_indices]
+
+# Print the years and sunspot numbers for local maxima
+print(local_maxima[['year', 'sunspot']])
+
+# Create a subplot layout with two graphs
+fig, axs = plt.subplots(2, 1, figsize=(20, 12), sharex=True)
+
+# Plot 1: Full sunspot data with local maxima highlighted
+axs[0].fill_between(data['year'], data['sunspot'], color='skyblue', alpha=0.4)
+axs[0].plot(data['year'], data['sunspot'], color='Slateblue', alpha=0.6, linewidth=2)
+axs[0].scatter(local_maxima['year'], local_maxima['sunspot'], color='red', label='Local Maxima')
+for idx, row in local_maxima.iterrows():
+    axs[0].text(row['year'], row['sunspot'] + 5, f"{int(row['sunspot'])}", ha='center', color='red')
+axs[0].set_ylabel('Sunspot')
+axs[0].set_title('Sunspot Data with Local Maxima')
+axs[0].grid(True)
+axs[0].legend()
+
+# Plot 2: Local maxima only
+axs[1].scatter(local_maxima['year'], local_maxima['sunspot'], color='red')
+axs[1].plot(local_maxima['year'], local_maxima['sunspot'], color='Slateblue', alpha=0.6, linewidth=2)
+for idx, row in local_maxima.iterrows():
+    axs[1].text(row['year'], row['sunspot'] + 5, f"{int(row['sunspot'])}", ha='center', color='red')
+axs[1].set_xlabel('Year')
+axs[1].set_ylabel('Sunspot')
+axs[1].set_title('Local Maxima of Sunspot Data')
+axs[1].grid(True)
+
+# Display the plots
+plt.show()
